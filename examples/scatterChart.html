@@ -20,6 +20,10 @@ div {
   margin: 0;
 }
 
+.brush-rect {
+  border: 1px;
+}
+
 /*
 #offsetDiv {
   margin-left: 100px;
@@ -27,6 +31,11 @@ div {
 }
 */
 
+.brush-rect rect.extent {
+  fill: #000;
+  fill-opacity: .125;
+  stroke: #888181;
+}
 
 #test1 {
   margin: 0;
@@ -74,11 +83,12 @@ nv.addGraph(function() {
   chart.xAxis.tickFormat(d3.format('.02f'));
   chart.yAxis.tickFormat(d3.format('.02f'));
   chart.tooltipContent(function(key) {
+      // return '<rect width="500" height="400" fill="none" stroke="blue" stroke-width="2" stroke-dasharray="6,8"/>';
       return '<h2>' + key + '</h2>';
   });
 
   d3.select('#test1 svg')
-      .datum(randomData(4,40))
+      .datum(randomData(1,8))
       .call(chart);
 
   nv.utils.windowResize(chart.update);
@@ -102,9 +112,9 @@ function randomData(groups, points) { //# groups,# points per group
 
     for (j = 0; j < points; j++) {
       data[i].values.push({
-        x: random(), 
-        y: random(), 
-        size: Math.random(), 
+        x: random(),
+        y: random(),
+        size: Math.random(),
         shape: shapes[j % 6]
       });
     }

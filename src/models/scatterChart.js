@@ -36,9 +36,11 @@ nv.models.scatterChart = function() {
     , tooltip      = null
     , state = {}
     , defaultState = null
-    , dispatch     = d3.dispatch('tooltipShow', 'tooltipHide', 'stateChange', 'changeState')
+    , dispatch     = d3.dispatch('tooltipShow', 'tooltipHide', 'stateChange', 'changeState', 'brush')
     , noData       = "No Data Available."
     , transitionDuration = 250
+    , brush = d3.svg.brush()
+    , brushExtent = null
     ;
 
   scatter
@@ -60,6 +62,7 @@ nv.models.scatterChart = function() {
     .axis('y')
     ;
 
+  
   controls.updateState(false);
 
   //============================================================
@@ -175,6 +178,7 @@ nv.models.scatterChart = function() {
       gEnter.append('g').attr('class', 'nv-distWrap');
       gEnter.append('g').attr('class', 'nv-legendWrap');
       gEnter.append('g').attr('class', 'nv-controlsWrap');
+      gEnter.append("g").attr("class", "brush-rect nv-brush")
 
       //------------------------------------------------------------
 
@@ -246,6 +250,7 @@ nv.models.scatterChart = function() {
 
       //Adjust for x and y padding
       if (xPadding !== 0) {
+console.log('xPadding!');
         var xRange = x.domain()[1] - x.domain()[0];
         scatter.xDomain([x.domain()[0] - (xPadding * xRange), x.domain()[1] + (xPadding * xRange)]);
       }
@@ -326,8 +331,69 @@ nv.models.scatterChart = function() {
       //------------------------------------------------------------
 
 
+      //------------------------------------------------------------
+      // Setup Brush
+
+      brush
+        .x(x)
+        .y(y)
+        .on("brushend", function () {
+          var brushExtent;
+
+          if (brush.empty()) {
+            return;
+          }
+          var brushExtent = brush.empty() ? null : brush.extent();
+
+          var x0 = brushExtent[0][0];
+          var x1 = brushExtent[1][0];
+          var y0 = brushExtent[0][1];
+          var y1 = brushExtent[1][1];
+
+          dispatch.brush({extent: brushExtent, brush: brush});
+
+          // Key connection between two charts
+          var focusWrap = g.select('.nv-scatterWrap')
+            .datum(
+              data
+                .filter(function(d) { return !d.disabled })
+                .map(function(d,i) {
+                  return {
+                    key: d.key,
+                    values: d.values.filter(function(d,i) {
+                      if(scatter.x()(d,i) >= x0 && scatter.x()(d,i) <= x1
+                        && scatter.y()(d,i) >= y0 && scatter.y()(d,i) <= y1) {
+                        console.log(scatter.x()(d,i));
+                        console.log(scatter.y()(d,i));
+                      }
+                    })
+                  }
+                })
+            );
+
+            // 在这里更新其它图形
+            // focusLinesWrap.transition().duration(transitionDuration).call(lines);
+        })
+
+      if (brushExtent) brush.extent(brushExtent);
+
+      var gBrush = g.select('.brush-rect.nv-brush')
+          .call(brush);
+/*
+        .on("brushend", function () {
+          if (!d3.event.sourceEvent) return; // only transition after input
+          d3.select(this).transition()
+              // .duration(brush.empty() ? 0 : 750)
+              // .call(brush.extent(defaultExtent))
+              // .call(brush.event);
+        });
+*/
+
+      //------------------------------------------------------------
 
 
+      //------------------------------------------------------------
+      // Setup Brush
       if (d3.fisheye) {
         g.select('.nv-background')
             .attr('width', availableWidth)
@@ -358,10 +424,10 @@ nv.models.scatterChart = function() {
 
         if (showXAxis)
           g.select('.nv-x.nv-axis').call(xAxis);
-        
+
         if (showYAxis)
           g.select('.nv-y.nv-axis').call(yAxis);
-        
+
         g.select('.nv-distributionX')
             .datum(data.filter(function(d) { return !d.disabled }))
             .call(distX);
