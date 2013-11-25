@@ -183,17 +183,7 @@ nv.models.scatterWithFocusChart = function() {
       //------------------------------------------------------------
 
 
-      //------------------------------------------------------------
-      // Setup Scales
-
-      x = scatter.xScale();
-      y = scatter.yScale();
-      x2 = scatter2.xScale();
-      y2 = scatter2.yScale();
-
-      //------------------------------------------------------------
-
-
+      
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
@@ -270,6 +260,17 @@ nv.models.scatterWithFocusChart = function() {
         .color(data.map(function(d,i) {
           return d.color || color(d, i);
         }).filter(function(d,i) { return !data[i].disabled }));
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      x = scatter.xScale();
+      y = scatter.yScale();
+      x2 = scatter2.xScale();
+      y2 = scatter2.yScale();
+
+      //------------------------------------------------------------
+
 
       if (xPadding !== 0) {
         scatter.xDomain(null);
@@ -435,6 +436,12 @@ nv.models.scatterWithFocusChart = function() {
         .x(x2)
         .y(y2)
         .on("brushend", function () {
+          // brush里面依然有bug，需要不断的如是刷新才能正常工作。悲剧
+          chart.update();
+
+          var oldTransition = chart.transitionDuration();
+          chart.transitionDuration(0); 
+
           var brushExtent = brush.empty() ? null : brush.extent();
           var extent = brush.empty() ? x2.domain() : brush.extent();
 
@@ -473,6 +480,9 @@ nv.models.scatterWithFocusChart = function() {
                 .call(xAxis);
             wrap.select('.nv-focus .nv-y.nv-axis').transition().duration(transitionDuration)
                 .call(yAxis);
+
+            chart.transitionDuration(oldTransition);
+
         })
 
       if (brushExtent) brush.extent(brushExtent);
