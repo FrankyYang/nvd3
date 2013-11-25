@@ -19,11 +19,15 @@ nv.models.scatterWithFocusChart = function() {
     ;
 
   var margin       = {top: 30, right: 20, bottom: 50, left: 75}
+    , margin2 = {top: 0, right: 30, bottom: 20, left: 60}
     , width        = null
     , height       = null
+    , height2      = 300
     , color        = nv.utils.defaultColor()
     , x            = scatter.xScale()
     , y            = scatter.yScale()
+    , x2
+    , y2
     , xPadding     = 0
     , yPadding     = 0
     , showDistX    = false
@@ -104,8 +108,8 @@ nv.models.scatterWithFocusChart = function() {
         topX = y.range()[0] + margin.top + ( offsetElement.offsetTop || 0),
         leftY = x.range()[0] + margin.left + ( offsetElement.offsetLeft || 0 ),
         topY = e.pos[1] + ( offsetElement.offsetTop || 0),
-        xVal = xAxis.tickFormat()(scatter.x()(e.point, e.pointIndex)),
-        yVal = yAxis.tickFormat()(scatter.y()(e.point, e.pointIndex));
+        xVal = xAxis.tickFormat()(scatter2.x()(e.point, e.pointIndex)),
+        yVal = yAxis.tickFormat()(scatter2.y()(e.point, e.pointIndex));
 
       if( tooltipX != null )
           nv.tooltip.show([leftX, topX], tooltipX(e.series.key, xVal, yVal, e, chart), 'n', 1, offsetElement, 'x-nvtooltip');
@@ -129,13 +133,14 @@ nv.models.scatterWithFocusChart = function() {
 
       var availableWidth = (width  || parseInt(container.style('width')) || 960)
                              - margin.left - margin.right,
+          /*
           availableHeight = (height || parseInt(container.style('height')) || 400)
                              - margin.top - margin.bottom;
-          /*
+          */
+
           availableHeight1 = (height || parseInt(container.style('height')) || 400)
                              - margin.top - margin.bottom - height2,
           availableHeight2 = height2 - margin2.top - margin2.bottom;
-          */
 
       chart.update = function() { container.transition().duration(transitionDuration).call(chart); };
       chart.container = this;
@@ -167,7 +172,7 @@ nv.models.scatterWithFocusChart = function() {
 
         noDataText
           .attr('x', margin.left + availableWidth / 2)
-          .attr('y', margin.top + availableHeight / 2)
+          .attr('y', margin.top + availableHeight2 / 2)
           .text(function(d) { return d });
 
         return chart;
@@ -181,8 +186,10 @@ nv.models.scatterWithFocusChart = function() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x0 = x0 || x;
-      y0 = y0 || y;
+      x = scatter.xScale();
+      y = scatter.yScale();
+      x2 = scatter2.xScale();
+      y2 = scatter2.yScale();
 
       //------------------------------------------------------------
 
@@ -191,34 +198,23 @@ nv.models.scatterWithFocusChart = function() {
       // Setup containers and skeleton of chart
 
       var wrap = container.selectAll('g.nv-wrap.nv-scatterChart').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'nvd3 nv-wrap nv-scatterChart nv-chart-' + scatter.id());
-      // var gEnter = wrapEnter.append('g');
-      var contextEnter = wrapEnter.append('g').attr('class', 'nv-context');
-      var focusEnter = wrapEnter.append('g').attr('class', 'nv-focus');
-
+      var gEnter = wrap.enter().append('g').attr('class', 'nvd3 nv-wrap nv-scatterChart nv-chart-' + scatter.id());
       var g = wrap.select('g');
 
-      // Context chart part || background for pointer events
-      contextEnter.append('rect').attr('class', 'nvd3 nv-background');
+      gEnter.append('g').attr('class', 'nv-legendWrap');
 
-      contextEnter.append('g').attr('class', 'nv-x nv-axis');
-      contextEnter.append('g').attr('class', 'nv-y nv-axis');
-      contextEnter.append('g').attr('class', 'nv-scatterWrap');
-      contextEnter.append('g').attr('class', 'nv-distWrap');
-      contextEnter.append('g').attr('class', 'nv-legendWrap');
-      contextEnter.append('g').attr('class', 'nv-controlsWrap');
-      contextEnter.append("g").attr("class", "brush-rect nv-brush")
-
-      // Focus chart part || background for pointer events
-      focusEnter.append('rect').attr('class', 'nvd3 nv-background');
-
+      var focusEnter = gEnter.append('g').attr('class', 'nv-focus');
       focusEnter.append('g').attr('class', 'nv-x nv-axis');
       focusEnter.append('g').attr('class', 'nv-y nv-axis');
       focusEnter.append('g').attr('class', 'nv-scatterWrap');
       focusEnter.append('g').attr('class', 'nv-distWrap');
-      focusEnter.append('g').attr('class', 'nv-legendWrap');
-      focusEnter.append('g').attr('class', 'nv-controlsWrap');
-      focusEnter.append("g").attr("class", "brush-rect nv-brush")
+
+      var contextEnter = gEnter.append('g').attr('class', 'nv-context');
+      contextEnter.append('g').attr('class', 'nv-x nv-axis');
+      contextEnter.append('g').attr('class', 'nv-y nv-axis');
+      contextEnter.append('g').attr('class', 'nv-scatterWrap');
+      contextEnter.append('g').attr('class', 'nv-distWrap');
+      contextEnter.append("g").attr("class", "brush-rect nv-brush")
 
       //------------------------------------------------------------
 
@@ -236,7 +232,7 @@ nv.models.scatterWithFocusChart = function() {
 
         if ( margin.top != legend.height()) {
           margin.top = legend.height();
-          availableHeight = (height || parseInt(container.style('height')) || 400)
+          availableHeight1 = (height || parseInt(container.style('height')) || 400)
                              - margin.top - margin.bottom;
         }
 
@@ -253,7 +249,7 @@ nv.models.scatterWithFocusChart = function() {
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       if (rightAlignYAxis) {
-          g.select(".nv-y.nv-axis")
+          g.selectAll(".nv-y.nv-axis")
               .attr("transform", "translate(" + availableWidth + ",0)");
       }
 
@@ -262,7 +258,7 @@ nv.models.scatterWithFocusChart = function() {
 
       scatter
           .width(availableWidth)
-          .height(availableHeight)
+          .height(availableHeight1)
           .color(data.map(function(d,i) {
             return d.color || color(d, i);
           }).filter(function(d,i) { return !data[i].disabled }));
@@ -285,8 +281,12 @@ nv.models.scatterWithFocusChart = function() {
         scatter2.yDomain(null);
       }
 
-      // 原一次元位于下方，做为focus，二次元的数据brush选择生成
-      wrap.select('.nv-focus .nv-scatterWrap')
+      // 这就是一个奇迹，让图形能够上下布局展示的关键性语句
+      wrap.select('.nv-context')
+          .attr('transform', 'translate(0,' + ( availableHeight1 + margin.bottom + margin2.top) + ')')
+
+      // 原一次元位于下方，做为context，二次元的数据brush选择生成，为focus
+      wrap.select('.nv-context .nv-scatterWrap')
           .datum(data.filter(function(d) { return !d.disabled }))
           .call(scatter);
 
@@ -319,19 +319,19 @@ nv.models.scatterWithFocusChart = function() {
         xAxis
             .scale(x)
             .ticks( xAxis.ticks() && xAxis.ticks().length ? xAxis.ticks() : availableWidth / 100 )
-            .tickSize( -availableHeight , 0);
+            .tickSize( -availableHeight1 , 0);
         x2Axis
-            .scale(x)
-            .ticks( xAxis.ticks() && xAxis.ticks().length ? xAxis.ticks() : availableWidth / 100 )
-            .tickSize( -availableHeight , 0);
+            .scale(x2)
+            .ticks( x2Axis.ticks() && x2Axis.ticks().length ? x2Axis.ticks() : availableWidth / 100 )
+            .tickSize( -availableHeight2 , 0);
 
 
-        g.select('.nv-focus .nv-x.nv-axis')
-            .attr('transform', 'translate(0,' + y.range()[0] + ')')
+        wrap.select('.nv-focus .nv-x.nv-axis')
+            .attr('transform', 'translate(0,' + y2.range()[0] + ')')
             .call(xAxis);
 
-        g.select('.nv-context .nv-x.nv-axis')
-            .attr('transform', 'translate(0,' + y.range()[0] + ')')
+        wrap.select('.nv-context .nv-x.nv-axis')
+            .attr('transform', 'translate(0,' + y2.range()[0] + ')')
             .call(x2Axis);
 
       }
@@ -339,19 +339,25 @@ nv.models.scatterWithFocusChart = function() {
       if (showYAxis) {
         yAxis
             .scale(y)
-            .ticks( yAxis.ticks() && yAxis.ticks().length ? yAxis.ticks() : availableHeight / 36 )
+            .ticks( yAxis.ticks() && yAxis.ticks().length ? yAxis.ticks() : availableHeight1 / 36 )
             .tickSize( -availableWidth, 0);
 
         y2Axis
-            .scale(y)
-            .ticks( yAxis.ticks() && yAxis.ticks().length ? yAxis.ticks() : availableHeight / 36 )
+            .scale(y2)
+            .ticks( y2Axis.ticks() && y2Axis.ticks().length ? y2Axis.ticks() : availableHeight2 / 36 )
             .tickSize( -availableWidth, 0);
 
-        g.select('.nv-focus .nv-y.nv-axis')
+        d3.transition(wrap.select('.nv-focus .nv-y.nv-axis'))
             .call(yAxis);
 
-        g.select('.nv-context .nv-y.nv-axis')
-            .call(yAxis);
+        d3.transition(wrap.select('.nv-context .nv-y.nv-axis'))
+            .call(y2Axis);
+
+        wrap.select('.nv-focus .nv-x.nv-axis')
+            .attr('transform', 'translate(0,' + y2.range()[0] + ')');
+
+        wrap.select('.nv-context .nv-x.nv-axis')
+            .attr('transform', 'translate(0,' + y2.range()[0] + ')');
       }
 
 
@@ -363,23 +369,24 @@ nv.models.scatterWithFocusChart = function() {
             .color(data.map(function(d,i) {
               return d.color || color(d, i);
             }).filter(function(d,i) { return !data[i].disabled }));
-        gEnter.select('.nv-focus .nv-distWrap').append('g')
+
+        wrap.select('.nv-focus .nv-distWrap').append('g')
             .attr('class', 'nv-distributionX');
-        g.select('.nv-focus .nv-distributionX')
+        wrap.select('.nv-focus .nv-distributionX')
             .attr('transform', 'translate(0,' + y.range()[0] + ')')
             .datum(data.filter(function(d) { return !d.disabled }))
             .call(distX);
 
         distX2
             .getData(scatter2.x())
-            .scale(x)
+            .scale(x2)
             .width(availableWidth)
             .color(data.map(function(d,i) {
               return d.color || color(d, i);
             }).filter(function(d,i) { return !data[i].disabled }));
-        gEnter.select('.nv-context .nv-distWrap').append('g')
+        wrap.select('.nv-context .nv-distWrap').append('g')
             .attr('class', 'nv-distributionX');
-        g.select('.nv-context .nv-distributionX')
+        wrap.select('.nv-context .nv-distributionX')
             .attr('transform', 'translate(0,' + y.range()[0] + ')')
             .datum(data.filter(function(d) { return !d.disabled }))
             .call(distX2);
@@ -389,13 +396,13 @@ nv.models.scatterWithFocusChart = function() {
         distY
             .getData(scatter.y())
             .scale(y)
-            .width(availableHeight)
+            .width(availableHeight1)
             .color(data.map(function(d,i) {
               return d.color || color(d, i);
             }).filter(function(d,i) { return !data[i].disabled }));
-        gEnter.select('.nv-focus .nv-distWrap').append('g')
+        wrap.select('.nv-focus .nv-distWrap').append('g')
             .attr('class', 'nv-distributionY');
-        g.select('.nv-focus .nv-distributionY')
+        wrap.select('.nv-focus .nv-distributionY')
             .attr('transform', 
               'translate(' + (rightAlignYAxis ? availableWidth : -distY.size() ) + ',0)')
             .datum(data.filter(function(d) { return !d.disabled }))
@@ -403,14 +410,14 @@ nv.models.scatterWithFocusChart = function() {
 
         distY2
             .getData(scatter2.y())
-            .scale(y)
-            .width(availableHeight)
+            .scale(y2)
+            .width(availableHeight2)
             .color(data.map(function(d,i) {
               return d.color || color(d, i);
             }).filter(function(d,i) { return !data[i].disabled }));
-        gEnter.select('.nv-context .nv-distWrap').append('g')
+        wrap.select('.nv-context .nv-distWrap').append('g')
             .attr('class', 'nv-distributionY');
-        g.select('.nv-context .nv-distributionY')
+        wrap.select('.nv-context .nv-distributionY')
             .attr('transform', 
               'translate(' + (rightAlignYAxis ? availableWidth : -distY.size() ) + ',0)')
             .datum(data.filter(function(d) { return !d.disabled }))
@@ -425,25 +432,21 @@ nv.models.scatterWithFocusChart = function() {
       // Setup Brush
 
       brush
-        .x(x)
-        .y(y)
+        .x(x2)
+        .y(y2)
         .on("brushend", function () {
-          var brushExtent;
-
-          if (brush.empty()) {
-            return;
-          }
           var brushExtent = brush.empty() ? null : brush.extent();
+          var extent = brush.empty() ? x2.domain() : brush.extent();
 
-          var x0 = brushExtent[0][0];
-          var x1 = brushExtent[1][0];
-          var y0 = brushExtent[0][1];
-          var y1 = brushExtent[1][1];
+          var x0 = extent[0][0];
+          var x1 = extent[1][0];
+          var y0 = extent[0][1];
+          var y1 = extent[1][1];
 
-          dispatch.brush({extent: brushExtent, brush: brush});
+          dispatch.brush({extent: extent, brush: brush});
 
           // Key connection between two charts
-          var focusWrap = g.select('.nv-scatterWrap')
+          var focusWrap = wrap.select('.nv-focus .nv-scatterWrap')
             .datum(
               data
                 .filter(function(d) { return !d.disabled })
@@ -464,11 +467,17 @@ nv.models.scatterWithFocusChart = function() {
 
             // 在这里更新其它图形
             focusWrap.transition().duration(transitionDuration).call(scatter);
+
+            // Update Main (Focus) Axes
+            wrap.select('.nv-focus .nv-x.nv-axis').transition().duration(transitionDuration)
+                .call(xAxis);
+            wrap.select('.nv-focus .nv-y.nv-axis').transition().duration(transitionDuration)
+                .call(yAxis);
         })
 
       if (brushExtent) brush.extent(brushExtent);
 
-      var gBrush = g.select('.brush-rect.nv-brush')
+      var gBrush = wrap.select('.brush-rect.nv-brush')
           .call(brush);
 /*
         .on("brushend", function () {
@@ -512,7 +521,7 @@ nv.models.scatterWithFocusChart = function() {
 
       scatter.dispatch.on('elementMouseover.tooltip', function(e) {
         d3.select('.nv-chart-' + scatter.id() + ' .nv-series-' + e.seriesIndex + ' .nv-distx-' + e.pointIndex)
-            .attr('y1', function(d,i) { return e.pos[1] - availableHeight;});
+            .attr('y1', function(d,i) { return e.pos[1] - availableHeight1;});
         d3.select('.nv-chart-' + scatter.id() + ' .nv-series-' + e.seriesIndex + ' .nv-disty-' + e.pointIndex)
             .attr('x2', e.pos[0] + distX.size());
 
@@ -582,8 +591,12 @@ nv.models.scatterWithFocusChart = function() {
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.x2Axis = x2Axis;
+  chart.y2Axis = y2Axis;
   chart.distX = distX;
   chart.distY = distY;
+  chart.distX2 = distX2;
+  chart.distY2 = distY2;
 
   d3.rebind(chart, scatter, 'id', 'interactive', 'pointActive', 'x', 'y', 'shape', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'xRange', 'yRange', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'clipVoronoi', 'clipRadius', 'useVoronoi');
   chart.options = nv.utils.optionsFunc.bind(chart);
